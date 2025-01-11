@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Price Prediction</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background-image: url('/static/image.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333333;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #555555;
+            font-weight: bold;
+        }
+
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+
+
+        #predictionResult {
+            margin-top: 20px;
+            font-size: 25px;
+            text-align: center;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .developer-info {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8); /* Light white with transparency */
+            font-family: Arial, sans-serif;
+            font-size: 20px; /* Adjust font size as needed */
+            z-index: 1000; /* Ensure it stays on top */
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Get Your Car Price</h1>
+        <form id="predictionForm">
+            <label for="Company">Select Company:</label>
+            <select name="Company" id="Company" required>
+                <option value="">--Select Company--</option>
+                {% for company in companies %}
+                    <option value="{{ company }}">{{ company }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="Model">Select Model:</label>
+            <select name="Model" id="Model" required>
+                <option value="">--Select Model--</option>
+            </select>
+
+            <label for="Fuel">Fuel Type:</label>
+            <select name="Fuel" id="Fuel" required>
+                <option value="">--Select Fuel Type--</option>
+                {% for fuel in fuel_types %}
+                    <option value="{{ fuel }}">{{ fuel }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="km_driven">Kilometers Driven:</label>
+            <input type="number" name="km_driven" id="km_driven" required>
+
+
+
+            <label for="Owner">Owner (1st,2nd,3rd):</label>
+            <input type="text" name="Owner" id="Owner" required>
+
+            <label for="Year">Registered Year:</label>
+            <input type="number" name="Year" id="Year" required>
+
+            <button type="button" id="predictButton">Get Price</button>
+        </form>
+
+        <h2 id="predictionResult" class="hidden">Prediction will appear here</h2>
+    </div>
+
+    <script>
+        // Fetch models dynamically based on the selected company
+        $('#Company').on('change', function () {
+            const company = $(this).val();
+            if (company) {
+                $.ajax({
+                    url: '/get_models',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ company: company }),
+                    success: function (response) {
+                        const modelsDropdown = $('#Model');
+                        modelsDropdown.empty().append('<option value="">--Select Model--</option>');
+                        response.models.forEach(function (model) {
+                            modelsDropdown.append(`<option value="${model}">${model}</option>`);
+                        });
+                    }
+                });
+            }
+        });
+
+        // Send prediction request
+        $('#predictButton').click(function () {
+            const formData = {
+                Company: $('#Company').val(),
+                Model: $('#Model').val(),
+                km_driven: $('#km_driven').val(),
+                Fuel: $('#Fuel').val(),
+                Owner: $('#Owner').val(),
+                Year: $('#Year').val()
+            };
+
+            $.ajax({
+                url: '/predict',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    const resultElement = $('#predictionResult');
+                    if (response.error) {
+                        resultElement.text('Error: ' + response.error).removeClass('hidden').css('color', 'red');
+                    } else {
+                        resultElement.text('Predicted Price: ₹' + response.prediction).removeClass('hidden').css('color', '#007bff');
+                    }
+                },
+                error: function () {
+                    $('#predictionResult').text('An error occurred. Please try again.').removeClass('hidden').css('color', 'red');
+                }
+            });
+        });
+    </script>
+
+    <div class="developer-info">
+    <span>Developed by</span><br>
+    <strong>Tark Patel</strong>
+</div>
+</body>
+</html>
